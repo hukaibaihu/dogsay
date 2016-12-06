@@ -12,18 +12,27 @@ import {
   ListView,
   Image,
   TouchableHighlight,
+  ActivityIndicator,
   Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
+import config from '../common/config';
+import httpClient from '../common/httpClient';
+
 const width = Dimensions.get('window').width;
-const fetchURL = 'http://rap.taobao.org/mockjsdata/11042/api/creations?accessToken=abcdef';
+const store = {
+  total: 0,
+  page: 1,
+  items: []
+};
 
 export default class List extends Component {
   constructor(props){
     super(props);
     var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     this.state = {
+      isLoading: false,
       dataSource: ds.cloneWithRows([
         {
             "id": "150000201302058122",
@@ -88,7 +97,7 @@ export default class List extends Component {
       ])
     };
   }
-  renderRow(row){
+  _renderRow(row){
     return (
       <TouchableHighlight>
         <View style={styles.item}>
@@ -111,21 +120,59 @@ export default class List extends Component {
     );
   }
   componentDidMount(){
-    this._fetchData()
+    this._fetchData(store.page);
   }
-  _fetchData(){
-    fetch(fetchURL)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        if(responseJson.success) {
+  _fetchData(page){
+
+    this.setState({
+      isLoading: true
+    });
+
+    httpClient.get(config.api.creations, {
+      accessToken: 'abcdef',
+      page: page
+    })
+      .then((json) => {
+        store.total = json.total;
+        let items = store.items.slice();
+        items = items.concat(json.data);
+        store.items = items;
+        if(json.success) {
           this.setState({
-            dataSource: this.state.dataSource.cloneWithRows(responseJson.data)
-          })
+            isLoading: false,
+            dataSource: this.state.dataSource.cloneWithRows(items)
+          });
         }
       })
       .catch((error) => {
+        this.setState({
+          isLoading: false
+        });
         console.error(error);
       });
+  }
+  _fetchMoreData(){
+    if(this._hasMore() && !this.state.isLoading) {
+      this._fetchData(store.page);
+    }
+  }
+  _hasMore(){
+    return store.items.length < store.total;
+  }
+  _renderFooter(){
+    if(!this._hasMore() && store.total != 0) {
+      return (
+        <View style={styles.loadWrap}>
+          <Text style={styles.loadTxt}>没有更多了</Text>
+        </View>
+      )
+    }
+
+    if(!this.state.isLoading) {
+      return <View style={styles.loadWrap} />
+    }
+
+    return <ActivityIndicator style={styles.loadWrap} />
   }
   render() {
     return (
@@ -135,7 +182,10 @@ export default class List extends Component {
         </View>
         <ListView
           dataSource={this.state.dataSource}
-          renderRow={this.renderRow}
+          renderRow={this._renderRow}
+          renderFooter={this._renderFooter.bind(this)}
+          onEndReached={this._fetchMoreData.bind(this)}
+          onEndReachedThreshold={20}
           enableEmptySections={true}
           automaticallyAdjustContentInsets={false}
         />
@@ -209,5 +259,12 @@ const styles = StyleSheet.create({
     paddingLeft: 18,
     fontSize: 18,
     color: '#333'
+  },
+  loadWrap: {
+    marginVertical: 20
+  },
+  loadTxt: {
+    color: '#777',
+    textAlign: 'center'
   }
 });
