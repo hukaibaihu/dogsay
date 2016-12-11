@@ -16,7 +16,8 @@ import {
   TabBarIOS,
   StyleSheet,
   Text,
-  View
+  View,
+  Navigator
 } from 'react-native';
 
 
@@ -35,7 +36,6 @@ export default class dogsay extends Component {
       </View>
     );
   }
-
   render() {
     return (
       <TabBarIOS tintColor="#ee735c">
@@ -48,7 +48,17 @@ export default class dogsay extends Component {
               selectedTab: 'list'
             })
           }}>
-          <List />
+          <Navigator
+            initialRoute={{
+              title: 'list',
+              index: 0,
+              component: List
+            }}
+            configureScene={(route) => Navigator.SceneConfigs.FloatFromRight}
+            renderScene={(route, navigator) => {
+              let ListComponent = route.component;
+              return <ListComponent {...route.params} navigator={navigator} />
+            }} />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-recording-outline'

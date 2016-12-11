@@ -13,12 +13,17 @@ import {
   Image,
   TouchableHighlight,
   ActivityIndicator,
+  RefreshControl,
+  AlertIOS,
   Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
+import Detail from './detail';
+
 import config from '../common/config';
 import httpClient from '../common/httpClient';
+import rowData from './rowData.json';
 
 const width = Dimensions.get('window').width;
 const store = {
@@ -27,79 +32,38 @@ const store = {
   items: []
 };
 
-export default class List extends Component {
-  constructor(props){
+class Item extends Component {
+  constructor(props) {
     super(props);
-    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    let row = props.row;
     this.state = {
-      isLoading: false,
-      dataSource: ds.cloneWithRows([
-        {
-            "id": "150000201302058122",
-            "thumb": "http://dummyimage.com/1280x720/75ee50)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "220000201406032523",
-            "thumb": "http://dummyimage.com/1280x720/21e490)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "640000198312085652",
-            "thumb": "http://dummyimage.com/1280x720/34c2a0)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "71000020010602358X",
-            "thumb": "http://dummyimage.com/1280x720/4e8a8d)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "450000199706096986",
-            "thumb": "http://dummyimage.com/1280x720/7a62ac)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "810000199803252896",
-            "thumb": "http://dummyimage.com/1280x720/62fad9)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "710000199007233041",
-            "thumb": "http://dummyimage.com/1280x720/3a7957)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "120000201108318829",
-            "thumb": "http://dummyimage.com/1280x720/b3b5d3)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "370000197510240721",
-            "thumb": "http://dummyimage.com/1280x720/9952d3)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        },
-        {
-            "id": "440000201309041648",
-            "thumb": "http://dummyimage.com/1280x720/965de8)",
-            "title": "测试内容rpk3",
-            "url": "http://v2.mukewang.com/28ae0fa3-e71e-4f3e-99c9-58458e5a9b51/L.mp4?auth_key=1480942624-0-0-05697b5c07624d5d4f815188fa8af34e"
-        }
-      ])
+      row: row,
+      up: false
     };
   }
-  _renderRow(row){
+  _up() {
+    httpClient.post(config.api.up, {
+      accessToken: 'abde',
+      up: this.state.up ? '0' : '1'
+    })
+      .then((data) => {
+        if(data && data.success) {
+          this.setState({
+            up: !this.state.up
+          });
+        } else {
+          AlertIOS.alert('点赞失败，请稍后再试');
+        }
+      })
+      .catch((err) => {
+        AlertIOS.alert('点赞失败，请稍后再试');
+        console.log(err);
+      });
+  }
+  render() {
+    let row = this.state.row;
     return (
-      <TouchableHighlight>
+      <TouchableHighlight onPress={this.props.onSelect}>
         <View style={styles.item}>
           <Text style={styles.title}>{row.title}</Text>
           <Image source={{uri: row.thumb}} style={styles.thumb}>
@@ -107,8 +71,13 @@ export default class List extends Component {
           </Image>
           <View style={styles.itemFooter}>
             <View style={styles.handleBox}>
-              <Icon name='ios-heart-outline' size={28} style={styles.handleIcon} />
-              <Text style={styles.handleTxt}>喜欢</Text>
+              <Icon
+                name={this.state.up ? 'ios-heart' : 'ios-heart-outline'}
+                size={28}
+                style={[styles.handleIcon, this.state.up ? styles.up : null]}
+                onPress={this._up.bind(this)}
+              />
+              <Text style={styles.handleTxt} onPress={this._up.bind(this)}>喜欢</Text>
             </View>
             <View style={styles.handleBox}>
               <Icon name='ios-chatboxes-outline' size={28} style={styles.handleIcon} />
@@ -119,41 +88,101 @@ export default class List extends Component {
       </TouchableHighlight>
     );
   }
+}
+
+export default class List extends Component {
+  constructor(props){
+    super(props);
+    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    this.state = {
+      isLoading: false,
+      isRefreshing: false,
+      dataSource: ds.cloneWithRows(rowData)
+    };
+  }
+  _loadPage(row) {
+    this.props.navigator.push({
+      title: 'detail',
+      index: 1,
+      component: Detail,
+      params: {
+        data: row
+      }
+    });
+  }
+  _renderRow(row){
+    return <Item
+              key={row.id}
+              row={row}
+              onSelect={(() => this._loadPage(row)).bind(this)} />
+  }
   componentDidMount(){
     this._fetchData(store.page);
   }
   _fetchData(page){
 
-    this.setState({
-      isLoading: true
-    });
+    if(page != 0) {
+      this.setState({
+        isLoading: true
+      });
+    } else {
+      this.setState({
+        isRefreshing: true
+      });
+    }
 
     httpClient.get(config.api.creations, {
       accessToken: 'abcdef',
       page: page
     })
       .then((json) => {
-        store.total = json.total;
-        let items = store.items.slice();
-        items = items.concat(json.data);
-        store.items = items;
         if(json.success) {
-          this.setState({
-            isLoading: false,
-            dataSource: this.state.dataSource.cloneWithRows(items)
-          });
+          let items = store.items.slice();
+
+          if(page != 0) {
+            items = items.concat(json.data);
+            store.page += 1;
+          } else {
+            items = json.data.concat(items);
+          }
+
+          store.items = items;
+          store.total = json.total;
+
+          if(page != 0) {
+            this.setState({
+              isLoading: false,
+              dataSource: this.state.dataSource.cloneWithRows(items)
+            });
+          } else {
+            this.setState({
+              isRefreshing: false,
+              dataSource: this.state.dataSource.cloneWithRows(items)
+            });
+          }
         }
       })
       .catch((error) => {
-        this.setState({
-          isLoading: false
-        });
+        if(page != 0) {
+          this.setState({
+            isLoading: false
+          });
+        } else {
+          this.setState({
+            isRefreshing: false
+          })
+        }
         console.error(error);
       });
   }
   _fetchMoreData(){
     if(this._hasMore() && !this.state.isLoading) {
       this._fetchData(store.page);
+    }
+  }
+  _onRefresh() {
+    if(this._hasMore() && !this.state.isRefreshing) {
+      this._fetchData(0);
     }
   }
   _hasMore(){
@@ -182,12 +211,20 @@ export default class List extends Component {
         </View>
         <ListView
           dataSource={this.state.dataSource}
-          renderRow={this._renderRow}
+          renderRow={this._renderRow.bind(this)}
           renderFooter={this._renderFooter.bind(this)}
-          onEndReached={this._fetchMoreData.bind(this)}
-          onEndReachedThreshold={20}
           enableEmptySections={true}
           automaticallyAdjustContentInsets={false}
+          onEndReached={this._fetchMoreData.bind(this)}
+          onEndReachedThreshold={20}
+          refreshControl={
+            <RefreshControl
+              refreshing={this.state.isRefreshing}
+              onRefresh={this._onRefresh.bind(this)}
+              tintColor='#ff6600'
+              title='正在刷新...'
+            />
+          }
         />
       </View>
     )
@@ -233,7 +270,7 @@ const styles = StyleSheet.create({
     height: 46,
     paddingTop: 9,
     paddingLeft: 18,
-    color: '#ed7b06',
+    color: '#ed7b66',
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#fff',
@@ -254,6 +291,9 @@ const styles = StyleSheet.create({
   handleIcon: {
     fontSize: 22,
     color: '#333'
+  },
+  up: {
+    color: '#ed7b66'
   },
   handleTxt: {
     paddingLeft: 18,
