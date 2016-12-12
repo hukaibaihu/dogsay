@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
   Dimensions
 } from 'react-native';
 import Video from 'react-native-video';
@@ -21,7 +22,7 @@ export default class Detail extends Component {
     super(props);
     this.state = {
       data: props.data,
-      rate: 3.0,
+      rate: 1.0,
       volume: 1.0,
       muted: false,
       paused: false,
@@ -46,11 +47,15 @@ export default class Detail extends Component {
     console.log('load');
   }
   _onProgress(data) {
+    console.log(data);
     let total = data.playableDuration;
+    let currentTime = data.currentTime;
+    let percent = (currentTime / total).toFixed(2) - 0;
+
     let newState = {
       duration: total,
-      currentTime: data.currentTime,
-      percent: (total / data.currentTime).toFixed(2) - 0
+      currentTime: currentTime.toFixed(2) - 0,
+      percent: percent
     };
 
     if(!this.state.loaded) {
@@ -65,12 +70,15 @@ export default class Detail extends Component {
   }
   _onEnd() {
     this.setState({
+      percent: 1,
       playing: false
     });
-    console.log('end')
   }
   _onError(err) {
     console.log(err)
+  }
+  _replay() {
+    this.refs.player.seek(0);
   }
   render() {
     let data = this.props.data;
@@ -78,7 +86,7 @@ export default class Detail extends Component {
       <View style={styles.container}>
         <Text onPress={this._back.bind(this)}>详情页面</Text>
         <View style={styles.videoBox}>
-          <Video ref={((ref) => {this.player = ref}).bind(this)}
+          <Video ref={'player'}
             style={styles.video}
             source={{uri: data.url}}
             rate={this.state.rate}                      // 0 is paused, 1 is normal.
@@ -90,11 +98,22 @@ export default class Detail extends Component {
             playInBackground={false}                    // Audio continues to play when app entering background.
             playWhenInactive={false}                    // [iOS] Video continues to play when control or notification center are shown.
             progressUpdateInterval={250.0}              // [iOS] Interval to fire onProgress (default to ~250ms)
-            onLoadStart={this._onLoadStart.bind(this)}  // Callback when video starts to load
-            onLoad={this._onLoad.bind(this)}            // Callback when video loads
-            onProgress={this._onProgress.bind(this)}    // Callback every ~250ms with currentTime
-            onEnd={this._onEnd.bind(this)}              // Callback when playback finishes
-            onError={this._onError.bind(this)} />
+            onLoadStart={this._onLoadStart}  // Callback when video starts to load
+            onLoad={this._onLoad}            // Callback when video loads
+            onProgress={this._onProgress}    // Callback every ~250ms with currentTime
+            onEnd={this._onEnd}              // Callback when playback finishes
+            onError={this._onError} />
+          { !this.state.loaded && <ActivityIndicator color={'#fff'} style={styles.loading} /> }
+          { this.state.loaded && !this.state.playing
+            ? <Icon
+              style={styles.playIcon}
+              name={'ios-play'}
+              size={48}
+              onPress={this._replay.bind(this)} />
+            : null }
+          <View style={styles.progressBox}>
+            <View style={[styles.progressBar, {width: width * this.state.percent}]} />
+          </View>
         </View>
       </View>
     )
@@ -117,5 +136,37 @@ const styles = StyleSheet.create({
     width: width,
     height: width * 9 / 16,
     backgroundColor: '#000'
+  },
+  loading: {
+    position: 'absolute',
+    width: width,
+    top: 100,
+    left: 0,
+    alignSelf: 'center',
+    backgroundColor: 'transparent'
+  },
+  progressBox: {
+    width: width,
+    height: 2,
+    backgroundColor: '#ccc'
+  },
+  progressBar: {
+    width: 1,
+    height: 2,
+    backgroundColor: '#f60'
+  },
+  playIcon: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    left: width / 2 - 30,
+    top: 80,
+    paddingTop: 6,
+    paddingLeft: 20,
+    color: '#ed7b66',
+    backgroundColor: 'transparent',
+    borderColor: '#fff',
+    borderWidth: 1,
+    borderRadius: 30
   }
 });
