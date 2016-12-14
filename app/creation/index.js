@@ -14,7 +14,7 @@ import {
   TouchableHighlight,
   ActivityIndicator,
   RefreshControl,
-  AlertIOS,
+  Alert,
   Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -52,11 +52,11 @@ class Item extends Component {
             up: !this.state.up
           });
         } else {
-          AlertIOS.alert('点赞失败，请稍后再试');
+          Alert.alert('点赞失败，请稍后再试');
         }
       })
       .catch((err) => {
-        AlertIOS.alert('点赞失败，请稍后再试');
+        Alert.alert('点赞失败，请稍后再试');
         console.log(err);
       });
   }
@@ -93,7 +93,7 @@ class Item extends Component {
 export default class List extends Component {
   constructor(props){
     super(props);
-    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     this.state = {
       isLoading: false,
       isRefreshing: false,
@@ -114,7 +114,11 @@ export default class List extends Component {
     return <Item
               key={row.id}
               row={row}
-              onSelect={(() => this._loadPage(row)).bind(this)} />
+              onSelect={
+                ((app) => {
+                  return (() => app._loadPage(row))
+                })(this)
+              } />
   }
   componentDidMount(){
     this._fetchData(store.page);
